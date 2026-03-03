@@ -1,1 +1,56 @@
+name: 🌿 Generate Green Wall (Fixed)
 
+on:
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  green-wall:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 检出代码
+      - name: 🛒 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # 2. 配置 Git 用户信息（请务必修改下面的邮箱和名字，否则提交可能无效）
+      - name: ⚙️ Configure Git
+        run: |
+          git config --global user.email "3411486174@qq.com"
+          git config --global user.name "xiaoluoshen"
+
+      # 3. 生成提交的核心逻辑
+      - name: 📝 Generate commits with delay
+        run: |
+          # 创建一个跟踪文件，每次提交都会往里面写入内容，保证哈希值不同
+          touch .green-wall-tracker
+
+          # 循环生成过去 365 天的提交
+          for i in $(seq 1 365); do
+            # 生成随机数，模拟人类不规律的提交间隔 (1 到 5 秒之间)
+            SLEEP_TIME=$((RANDOM % 5 + 1))
+            echo "⏳ Day $i: Sleeping for $SLEEP_TIME seconds before commit..."
+
+            # 写入当天日期作为内容，确保文件发生变化（这是产生提交的关键）
+            echo "📅 Commit for day $i - $(date)" >> .green-wall-tracker
+
+            # 添加文件到暂存区
+            git add .green-wall-tracker
+
+            # 设置提交时间为 $i 天前
+            DATE=$(date -d "$i days ago" +"%Y-%m-%d %H:%M:%S")
+            git commit -m "🌱 Daily Green Wall Commit $i" --date="$DATE"
+
+            # 核心修复：添加随机休眠，防止因速度过快被封禁
+            sleep $SLEEP_TIME
+
+            # 分批推送：每生成 10 次提交就推送一次，避免单次推送量过大
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "🚀 Pushing commits up to day $i..."
+              git push origin main
+            fi
+          done
+
+          # 最后的收尾推送（确保最后几天的提交也推上去）
+          echo "✅ Final push..."
+          git push origin main
